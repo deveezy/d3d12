@@ -10,7 +10,6 @@ void report_assertion_failure(const char* expression, const char* message, const
            expression, message, file, line);
 }
 
-
 DxException::DxException(HRESULT hr, const std::wstring& functionName, const std::wstring& filename, i32 lineNumber) :
     ErrorCode(hr), FunctionName(functionName), Filename(filename), LineNumber(lineNumber) {}
 

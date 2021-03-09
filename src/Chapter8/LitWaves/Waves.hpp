@@ -20,7 +20,7 @@ public:
 	f32 Depth() const;
 
 	// Returns the solution at the ith grid poi32.
-    const DirectX::XMFLOAT3& Position(i32 i) const { return mCurrSolution[i]; }
+
 
 	// Returns the solution normal at the ith grid poi32.
     const DirectX::XMFLOAT3& Normal(i32 i) const { return mNormals[i]; }

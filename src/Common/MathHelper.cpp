@@ -57,7 +57,7 @@ XMVECTOR MathHelper::RandHemisphereUnitVec3(DirectX::XMVECTOR n)
     XMVECTOR Zero = XMVectorZero();
 
     // Keep trying until we get a point on/in the hemisphere.
-    while (true)
+    for(;;) 
     {
         // Generate random point in the cube [-1, 1] ^ 3.
         XMVECTOR v = XMVectorSet(
