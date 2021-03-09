@@ -6,7 +6,7 @@
 
 using namespace DirectX;
 
-Waves::Waves(i32 m, i32 n, f32 dx, f32 dt, f32 speed, f32 damping)
+Waves::Waves(int m, int n, float dx, float dt, float speed, float damping)
 {
     mNumRows = m;
     mNumCols = n;
@@ -17,8 +17,8 @@ Waves::Waves(i32 m, i32 n, f32 dx, f32 dt, f32 speed, f32 damping)
     mTimeStep = dt;
     mSpatialStep = dx;
 
-    f32 d = damping*dt + 2.0f;
-    f32 e = (speed*speed)*(dt*dt) / (dx*dx);
+    float d = damping*dt + 2.0f;
+    float e = (speed*speed)*(dt*dt) / (dx*dx);
     mK1 = (damping*dt - 2.0f) / d;
     mK2 = (4.0f - 8.0f*e) / d;
     mK3 = (2.0f*e) / d;
@@ -30,14 +30,14 @@ Waves::Waves(i32 m, i32 n, f32 dx, f32 dt, f32 speed, f32 damping)
 
     // Generate grid vertices in system memory.
 
-    f32 halfWidth = (n - 1)*dx*0.5f;
-    f32 halfDepth = (m - 1)*dx*0.5f;
-    for(i32 i = 0; i < m; ++i)
+    float halfWidth = (n - 1)*dx*0.5f;
+    float halfDepth = (m - 1)*dx*0.5f;
+    for(int i = 0; i < m; ++i)
     {
-        f32 z = halfDepth - i*dx;
-        for(i32 j = 0; j < n; ++j)
+        float z = halfDepth - i*dx;
+        for(int j = 0; j < n; ++j)
         {
-            f32 x = -halfWidth + j*dx;
+            float x = -halfWidth + j*dx;
 
             mPrevSolution[i*n + j] = XMFLOAT3(x, 0.0f, z);
             mCurrSolution[i*n + j] = XMFLOAT3(x, 0.0f, z);
@@ -51,39 +51,39 @@ Waves::~Waves()
 {
 }
 
-i32 Waves::RowCount()const
+int Waves::RowCount()const
 {
 	return mNumRows;
 }
 
-i32 Waves::ColumnCount()const
+int Waves::ColumnCount()const
 {
 	return mNumCols;
 }
 
-i32 Waves::VertexCount()const
+int Waves::VertexCount()const
 {
 	return mVertexCount;
 }
 
-i32 Waves::TriangleCount()const
+int Waves::TriangleCount()const
 {
 	return mTriangleCount;
 }
 
-f32 Waves::Width()const
+float Waves::Width()const
 {
 	return mNumCols*mSpatialStep;
 }
 
-f32 Waves::Depth()const
+float Waves::Depth()const
 {
 	return mNumRows*mSpatialStep;
 }
 
-void Waves::Update(f32 dt)
+void Waves::Update(float dt)
 {
-	static f32 t = 0;
+	static float t = 0;
 
 	// Accumulate time.
 	t += dt;
@@ -91,11 +91,11 @@ void Waves::Update(f32 dt)
 	// Only update the simulation at the specified time step.
 	if( t >= mTimeStep )
 	{
-		// Only update i32erior poi32s; we use zero boundary conditions.
-		concurrency::parallel_for(1, mNumRows - 1, [this](i32 i)
-		//for(i32 i = 1; i < mNumRows-1; ++i)
+		// Only update interior points; we use zero boundary conditions.
+		concurrency::parallel_for(1, mNumRows - 1, [this](int i)
+		//for(int i = 1; i < mNumRows-1; ++i)
 		{
-			for(i32 j = 1; j < mNumCols-1; ++j)
+			for(int j = 1; j < mNumCols-1; ++j)
 			{
 				// After this update we will be discarding the old previous
 				// buffer, so overwrite that buffer with the new update.
@@ -126,15 +126,15 @@ void Waves::Update(f32 dt)
 		//
 		// Compute normals using finite difference scheme.
 		//
-		concurrency::parallel_for(1, mNumRows - 1, [this](i32 i)
-		//for(i32 i = 1; i < mNumRows - 1; ++i)
+		concurrency::parallel_for(1, mNumRows - 1, [this](int i)
+		//for(int i = 1; i < mNumRows - 1; ++i)
 		{
-			for(i32 j = 1; j < mNumCols-1; ++j)
+			for(int j = 1; j < mNumCols-1; ++j)
 			{
-				f32 l = mCurrSolution[i*mNumCols+j-1].y;
-				f32 r = mCurrSolution[i*mNumCols+j+1].y;
-				f32 t = mCurrSolution[(i-1)*mNumCols+j].y;
-				f32 b = mCurrSolution[(i+1)*mNumCols+j].y;
+				float l = mCurrSolution[i*mNumCols+j-1].y;
+				float r = mCurrSolution[i*mNumCols+j+1].y;
+				float t = mCurrSolution[(i-1)*mNumCols+j].y;
+				float b = mCurrSolution[(i+1)*mNumCols+j].y;
 				mNormals[i*mNumCols+j].x = -r+l;
 				mNormals[i*mNumCols+j].y = 2.0f*mSpatialStep;
 				mNormals[i*mNumCols+j].z = b-t;
@@ -150,13 +150,13 @@ void Waves::Update(f32 dt)
 	}
 }
 
-void Waves::Disturb(i32 i, i32 j, f32 magnitude)
+void Waves::Disturb(int i, int j, float magnitude)
 {
 	// Don't disturb boundaries.
 	assert(i > 1 && i < mNumRows-2);
 	assert(j > 1 && j < mNumCols-2);
 
-	f32 halfMag = 0.5f*magnitude;
+	float halfMag = 0.5f*magnitude;
 
 	// Disturb the ijth vertex height and its neighbors.
 	mCurrSolution[i*mNumCols+j].y     += magnitude;

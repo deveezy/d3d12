@@ -1,6 +1,9 @@
 #include <Chapter7/Skull/SkullApp.hpp>
 #include <io/FileUtil.hpp>
 #include <io/StringUtil.hpp>
+#include <ppl.h>
+
+
 
 i32 WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
     PSTR cmdLine, int showCmd)
@@ -415,6 +418,17 @@ i32 ReadVec4Float(const char* str, DirectX::XMFLOAT4* vec4)
     return offset;
 }
 
+i32 ReadVec3x2Float(const char* str, DirectX::XMFLOAT3* first, DirectX::XMFLOAT3* second)
+{
+    i32 offset = -1;
+    ReadFormatted(str, "%f %f %f %f %f %f%n",
+        &first->x, &first->y, &first->z, 
+        &second->x, &second->y, &second->z, 
+        &offset);
+
+    return offset;
+}
+
 i32 ReadVec3Float(const char* str, DirectX::XMFLOAT3* vec3)
 {
     i32 offset = -1;
@@ -443,24 +457,16 @@ void AddIndices(std::vector<u16>& indices, const char* index_string)
 void AddVertecies(std::vector<Vertex>& vertices, const char* vertex_string)
 {
     i32 offset = 0;
+    Vertex vertex;
     for (; *(vertex_string + offset) != '\0'; )
     {
-        Vertex vertex;
     #ifdef POSITION_VEC3
-        offset += ReadVec3Float(vertex_string + offset, &vertex.vec3_pos);
-    #endif
-    #ifdef POSITION_VEC4
-        offset += ReadVec4Float(vertex_string + offset, &vertex.vec4_pos);
-    #endif
-    #ifdef NORMAL_VEC3
-        offset += ReadVec3Float(vertex_string + offset, &vertex.vec3_norm);
-    #endif
-    #ifdef NORMAL_VEC4
-        offset += ReadVec4Float(vertex_string + offset, &vertex.vec4_norm);
+        offset += ReadVec3x2Float(vertex_string + offset, &vertex.vec3_pos, &vertex.vec3_norm);
     #endif
         vertices.emplace_back(std::move(vertex));
     }
 }
+
 void SkullApp::BuildShapeGeometry()
 {
     File file("D:\\dev\\skull.txt", "r");
@@ -476,10 +482,8 @@ void SkullApp::BuildShapeGeometry()
     StringUtil::ClearStrings(count_substrings);
     std::vector<Vertex> vertices;
     std::vector<u16>    indices;
-    vertices.resize(vertexCount);
-    indices.resize(triangleCount * 3);
-    vertices.clear();
-    indices.clear();
+    vertices.reserve(vertexCount);
+    indices.reserve(triangleCount * 3);
 
     size_t stringCount;
     char** strings = StringUtil::SplitFormatted(file.m_fBuffer, '{', '}', &stringCount);
@@ -515,7 +519,7 @@ void SkullApp::BuildShapeGeometry()
     CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vb_byte_size);
 
     ThrowIfFailed(D3DCreateBlob(ib_byte_size, &geo->IndexBufferCPU));
-    CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vb_byte_size);
+    CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ib_byte_size);
 
     geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(
         md3dDevice.Get(), 

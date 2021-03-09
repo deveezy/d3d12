@@ -25,6 +25,20 @@ add_executable(${proj} WIN32
     src/Chapter8/LitWaves/Waves.hpp
     src/Chapter8/LitWaves/Waves.cpp
     src/Chapter8/LitWaves/LitWavesApp.cpp
+    # src/Chapter7/Skull/FrameResource.hpp
+    # src/Chapter7/Skull/FrameResource.cpp
+    # src/Chapter7/Skull/SkullApp.cpp
+    # src/Chapter7/Skull/SkullApp.hpp
+
+    # src/Chapter7/FrameResource.hpp
+    # src/Chapter7/FrameResource.cpp
+    # src/Chapter7/ShapesApp.cpp
+    # src/Chapter7/ShapesApp.hpp
+
+    src/io/FileUtil.hpp
+    src/io/FileUtil.cpp
+    src/io/StringUtil.hpp
+    src/io/StringUtil.cpp
 )
 
 

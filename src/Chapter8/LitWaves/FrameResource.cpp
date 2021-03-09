@@ -1,12 +1,12 @@
 #include "Chapter8/LitWaves/FrameResource.hpp"
 
-FrameResource::FrameResource(ID3D12Device* device, u32 passCount, u32 objectCount, u32 materialCount, u32 waveVertCount)
+FrameResource::FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount, UINT waveVertCount)
 {
     ThrowIfFailed(device->CreateCommandAllocator(
         D3D12_COMMAND_LIST_TYPE_DIRECT,
 		IID_PPV_ARGS(CmdListAlloc.GetAddressOf())));
 
-    // FrameCB = std::make_unique<UploadBuffer<FrameConstants>>(device, 1, true);
+  //  FrameCB = std::make_unique<UploadBuffer<FrameConstants>>(device, 1, true);
     PassCB = std::make_unique<UploadBuffer<PassConstants>>(device, passCount, true);
     MaterialCB = std::make_unique<UploadBuffer<MaterialConstants>>(device, materialCount, true);
     ObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(device, objectCount, true);
@@ -14,4 +14,7 @@ FrameResource::FrameResource(ID3D12Device* device, u32 passCount, u32 objectCoun
     WavesVB = std::make_unique<UploadBuffer<Vertex>>(device, waveVertCount, false);
 }
 
-FrameResource::~FrameResource() {}
+FrameResource::~FrameResource()
+{
+
+}

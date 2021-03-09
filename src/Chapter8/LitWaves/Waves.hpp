@@ -7,44 +7,44 @@
 class Waves
 {
 public:
-    Waves(i32 m, i32 n, f32 dx, f32 dt, f32 speed, f32 damping);
+    Waves(int m, int n, float dx, float dt, float speed, float damping);
     Waves(const Waves& rhs) = delete;
     Waves& operator=(const Waves& rhs) = delete;
     ~Waves();
 
-	i32 RowCount() const;
-	i32 ColumnCount() const;
-	i32 VertexCount() const;
-	i32 TriangleCount() const;
-	f32 Width() const;
-	f32 Depth() const;
+	int RowCount()const;
+	int ColumnCount()const;
+	int VertexCount()const;
+	int TriangleCount()const;
+	float Width()const;
+	float Depth()const;
 
-	// Returns the solution at the ith grid poi32.
+	// Returns the solution at the ith grid point.
+    const DirectX::XMFLOAT3& Position(int i)const { return mCurrSolution[i]; }
 
+	// Returns the solution normal at the ith grid point.
+    const DirectX::XMFLOAT3& Normal(int i)const { return mNormals[i]; }
 
-	// Returns the solution normal at the ith grid poi32.
-    const DirectX::XMFLOAT3& Normal(i32 i) const { return mNormals[i]; }
+	// Returns the unit tangent vector at the ith grid point in the local x-axis direction.
+    const DirectX::XMFLOAT3& TangentX(int i)const { return mTangentX[i]; }
 
-	// Returns the unit tangent vector at the ith grid poi32 in the local x-axis direction.
-    const DirectX::XMFLOAT3& TangentX(i32 i) const { return mTangentX[i]; }
-
-	void Update(f32 dt);
-	void Disturb(i32 i, i32 j, f32 magnitude);
+	void Update(float dt);
+	void Disturb(int i, int j, float magnitude);
 
 private:
-    i32 mNumRows = 0;
-    i32 mNumCols = 0;
+    int mNumRows = 0;
+    int mNumCols = 0;
 
-    i32 mVertexCount = 0;
-    i32 mTriangleCount = 0;
+    int mVertexCount = 0;
+    int mTriangleCount = 0;
 
     // Simulation constants we can precompute.
-    f32 mK1 = 0.0f;
-    f32 mK2 = 0.0f;
-    f32 mK3 = 0.0f;
+    float mK1 = 0.0f;
+    float mK2 = 0.0f;
+    float mK3 = 0.0f;
 
-    f32 mTimeStep = 0.0f;
-    f32 mSpatialStep = 0.0f;
+    float mTimeStep = 0.0f;
+    float mSpatialStep = 0.0f;
 
     std::vector<DirectX::XMFLOAT3> mPrevSolution;
     std::vector<DirectX::XMFLOAT3> mCurrSolution;
