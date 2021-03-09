@@ -310,6 +310,9 @@ bool D3DApp::Initialize()
 
 bool D3DApp::InitDirect3D() 
 {
+    #ifdef NICE
+    int a = 10;
+    #endif
 #if defined(DEBUG) || defined(_DEBUG) 
     //Enable the d312 debug layer.
     ComPtr<ID3D12Debug> debugController;

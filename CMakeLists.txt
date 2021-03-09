@@ -41,6 +41,15 @@ add_executable(${proj} WIN32
     src/io/StringUtil.cpp
 )
 
+get_cmake_property(_varNames VARIABLES)
+list (REMOVE_DUPLICATES _varNames)
+list (SORT _varNames)
+foreach (_varName ${_varNames})
+    if (_varName MATCHES "_INIT$")
+        message(STATUS "${_varName}=${${_varName}}")
+    endif()
+endforeach()
+
 
 include_directories(src/)
 
@@ -53,6 +62,9 @@ if(MSVC)
     if(NOT CMAKE_C_EXTENSIONS)
         set(CMAKE_C_EXTENSIONS OFF)
     endif()
+    target_compile_options(${proj} PRIVATE /W4)
+    # target_compile_options(${proj} PRIVATE /EHs-c- /GR-)
+
 
 endif()
 
