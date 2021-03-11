@@ -2,8 +2,8 @@
 #include <Common/MathHelper.hpp>
 #include <Common/UploadBuffer.hpp>
 #include <Common/GeometryGenerator.hpp>
-#include <Chapter7/LandWave/FrameResource.hpp>
-#include <Chapter7/LandWave/Waves.hpp>
+#include <Chapter8/LitWaves/FrameResource.hpp>
+#include <Chapter8/LitWaves/Waves.hpp>
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -22,6 +22,8 @@ struct RenderItem
 	// and scale of the object in the world.
 	XMFLOAT4X4 World = MathHelper::Identity4x4();
 
+	XMFLOAT4X4 TexTransform = MathHelper::Identity4x4();
+
 	// Dirty flag indicating the object data has changed and we need to update the constant buffer.
 	// Because we have an object cbuffer for each FrameResource, we have to apply the
 	// update to each FrameResource.  Thus, when we modify obect data we should set 
@@ -29,8 +31,9 @@ struct RenderItem
 	i32 NumFramesDirty = gNumFrameResources;
 
 	// Index into GPU constant buffer corresponding to the ObjectCB for this render item.
-	u32 ObjCBIndex = -1;
+	i32 ObjCBIndex = -1;
 
+	Material* Mat = nullptr;
 	MeshGeometry* Geo = nullptr;
 
 	// Primitive topology.
@@ -48,13 +51,13 @@ enum class RenderLayer : i32
 	Count
 };
 
-class LandAndWavesApp : public D3DApp
+class LitWavesApp : public D3DApp
 {
 public:
-    LandAndWavesApp(HINSTANCE hInstance);
-    LandAndWavesApp(const LandAndWavesApp& rhs) = delete;
-    LandAndWavesApp& operator=(const LandAndWavesApp& rhs) = delete;
-    ~LandAndWavesApp();
+    LitWavesApp(HINSTANCE hInstance);
+    LitWavesApp(const LitWavesApp& rhs) = delete;
+    LitWavesApp& operator=(const LitWavesApp& rhs) = delete;
+    ~LitWavesApp();
 
     virtual bool Initialize()override;
 
@@ -70,6 +73,7 @@ private:
 	void OnKeyboardInput(const GameTimer& gt);
 	void UpdateCamera(const GameTimer& gt);
 	void UpdateObjectCBs(const GameTimer& gt);
+	void UpdateMaterialCBs(const GameTimer& gt);
 	void UpdateMainPassCB(const GameTimer& gt);
 	void UpdateWaves(const GameTimer& gt);
 
@@ -79,6 +83,7 @@ private:
     void BuildWavesGeometryBuffers();
     void BuildPSOs();
     void BuildFrameResources();
+    void BuildMaterials();
     void BuildRenderItems();
 	void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
 
@@ -86,7 +91,6 @@ private:
     XMFLOAT3 GetHillsNormal(f32 x, f32 z)const;
 
 private:
-
     std::vector<std::unique_ptr<FrameResource>> mFrameResources;
     FrameResource* mCurrFrameResource = nullptr;
     i32 mCurrFrameResourceIndex = 0;
@@ -96,6 +100,8 @@ private:
     ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
 
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> mGeometries;
+	std::unordered_map<std::string, std::unique_ptr<Material>> mMaterials;
+	std::unordered_map<std::string, std::unique_ptr<Texture>> mTextures;
 	std::unordered_map<std::string, ComPtr<ID3DBlob>> mShaders;
 	std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> mPSOs;
 
@@ -113,55 +119,55 @@ private:
 
     PassConstants mMainPassCB;
 
-    bool mIsWireframe = false;
-
 	XMFLOAT3   mEyePos = { 0.0f, 0.0f, 0.0f };
 	XMFLOAT4X4 mView = MathHelper::Identity4x4();
 	XMFLOAT4X4 mProj = MathHelper::Identity4x4();
 
-    f32 mTheta = 1.5f * XM_PI;
+    f32 mTheta = 1.5f*XM_PI;
     f32 mPhi = XM_PIDIV2 - 0.1f;
     f32 mRadius = 50.0f;
 
-	f32 mSunTheta = 1.25f * XM_PI;
+	f32 mSunTheta = 1.25f*XM_PI;
 	f32 mSunPhi = XM_PIDIV4;
 
     POINT mLastMousePos;
 };
 
-// i32 WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
-//     PSTR cmdLine, i32 showCmd)
-// {
-//     // Enable run-time memory check for debug builds.
-// #if defined(DEBUG) | defined(_DEBUG)
-//     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-// #endif
+i32 WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
+    PSTR cmdLine, i32 showCmd)
+{
+    // Enable run-time memory check for debug builds.
+#if defined(DEBUG) | defined(_DEBUG)
+    _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#endif
 
-//     try
-//     {
-//         LandAndWavesApp theApp(hInstance);
-//         if(!theApp.Initialize())
-//             return 0;
+    try
+    {
+        LitWavesApp theApp(hInstance);
+        if(!theApp.Initialize())
+            return 0;
 
-//         return theApp.Run();
-//     }
-//     catch(DxException& e)
-//     {
-//         MessageBox(nullptr, e.ToString().c_str(), L"HR Failed", MB_OK);
-//         return 0;
-//     }
-// }
+        return theApp.Run();
+    }
+    catch(DxException& e)
+    {
+        MessageBox(nullptr, e.ToString().c_str(), L"HR Failed", MB_OK);
+        return 0;
+    }
+}
 
-LandAndWavesApp::LandAndWavesApp(HINSTANCE hInstance)
-    : D3DApp(hInstance) {}
+LitWavesApp::LitWavesApp(HINSTANCE hInstance)
+    : D3DApp(hInstance)
+{
+}
 
-LandAndWavesApp::~LandAndWavesApp()
+LitWavesApp::~LitWavesApp()
 {
     if(md3dDevice != nullptr)
         FlushCommandQueue();
 }
 
-bool LandAndWavesApp::Initialize()
+bool LitWavesApp::Initialize()
 {
     if(!D3DApp::Initialize())
         return false;
@@ -169,13 +175,18 @@ bool LandAndWavesApp::Initialize()
     // Reset the command list to prep for initialization commands.
     ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
 
+    // Get the increment size of a descriptor in this heap type.  This is hardware specific, so we have
+    // to query this information.
+    mCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
 	mWaves = std::make_unique<Waves>(128, 128, 1.0f, 0.03f, 4.0f, 0.2f);
 
     BuildRootSignature();
     BuildShadersAndInputLayout();
 	BuildLandGeometry();
     BuildWavesGeometryBuffers();
-    BuildRenderItems();
+	BuildMaterials();
+	BuildRenderItems();
     BuildFrameResources();
 	BuildPSOs();
 
@@ -190,16 +201,16 @@ bool LandAndWavesApp::Initialize()
     return true;
 }
  
-void LandAndWavesApp::OnResize()
+void LitWavesApp::OnResize()
 {
     D3DApp::OnResize();
 
     // The window resized, so update the aspect ratio and recompute the projection matrix.
-    XMMATRIX P = XMMatrixPerspectiveFovLH(0.25f*MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
+    XMMATRIX P = XMMatrixPerspectiveFovLH(0.25f * MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
     XMStoreFloat4x4(&mProj, P);
 }
 
-void LandAndWavesApp::Update(const GameTimer& gt)
+void LitWavesApp::Update(const GameTimer& gt)
 {
 	OnKeyboardInput(gt);
 	UpdateCamera(gt);
@@ -219,11 +230,12 @@ void LandAndWavesApp::Update(const GameTimer& gt)
 	}
 
 	UpdateObjectCBs(gt);
+	UpdateMaterialCBs(gt);
 	UpdateMainPassCB(gt);
 	UpdateWaves(gt);
 }
 
-void LandAndWavesApp::Draw(const GameTimer& gt)
+void LitWavesApp::Draw(const GameTimer& gt)
 {
 	auto cmdListAlloc = mCurrFrameResource->CmdListAlloc;
 
@@ -233,21 +245,18 @@ void LandAndWavesApp::Draw(const GameTimer& gt)
 
 	// A command list can be reset after it has been added to the command queue via ExecuteCommandList.
 	// Reusing the command list reuses memory.
-    if(mIsWireframe)
-    {
-        ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), mPSOs["opaque_wireframe"].Get()));
-    }
-    else
-    {
-        ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), mPSOs["opaque"].Get()));
-    }
+	ThrowIfFailed(mCommandList->Reset(cmdListAlloc.Get(), mPSOs["opaque"].Get()));
 
 	mCommandList->RSSetViewports(1, &mScreenViewport);
 	mCommandList->RSSetScissorRects(1, &mScissorRect);
 
 	// Indicate a state transition on the resource usage.
-	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
-		D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+	mCommandList->ResourceBarrier(1, 
+		&CD3DX12_RESOURCE_BARRIER::Transition(
+			CurrentBackBuffer(),
+			D3D12_RESOURCE_STATE_PRESENT, 
+			D3D12_RESOURCE_STATE_RENDER_TARGET)
+	);
 
 	// Clear the back buffer and depth buffer.
 	mCommandList->ClearRenderTargetView(CurrentBackBufferView(), Colors::LightSteelBlue, 0, nullptr);
@@ -258,9 +267,8 @@ void LandAndWavesApp::Draw(const GameTimer& gt)
 
 	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 
-    // Bind per-pass constant buffer.  We only need to do this once per-pass.
 	ID3D12Resource* passCB = mCurrFrameResource->PassCB->Resource();
-	mCommandList->SetGraphicsRootConstantBufferView(1, passCB->GetGPUVirtualAddress());
+	mCommandList->SetGraphicsRootConstantBufferView(2, passCB->GetGPUVirtualAddress());
 
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::Opaque]);
 
@@ -283,12 +291,12 @@ void LandAndWavesApp::Draw(const GameTimer& gt)
 	mCurrFrameResource->Fence = ++mCurrentFence;
 
 	// Add an instruction to the command queue to set a new fence point. 
-    // Because we are on the GPU timeline, the new fence poi32 won't be 
+    // Because we are on the GPU timeline, the new fence point won't be 
     // set until the GPU finishes processing all the commands prior to this Signal().
 	mCommandQueue->Signal(mFence.Get(), mCurrentFence);
 }
 
-void LandAndWavesApp::OnMouseDown(WPARAM btnState, i32 x, i32 y)
+void LitWavesApp::OnMouseDown(WPARAM btnState, int x, int y)
 {
     mLastMousePos.x = x;
     mLastMousePos.y = y;
@@ -296,18 +304,18 @@ void LandAndWavesApp::OnMouseDown(WPARAM btnState, i32 x, i32 y)
     SetCapture(mhMainWnd);
 }
 
-void LandAndWavesApp::OnMouseUp(WPARAM btnState, i32 x, i32 y)
+void LitWavesApp::OnMouseUp(WPARAM btnState, int x, int y)
 {
     ReleaseCapture();
 }
 
-void LandAndWavesApp::OnMouseMove(WPARAM btnState, i32 x, i32 y)
+void LitWavesApp::OnMouseMove(WPARAM btnState, int x, int y)
 {
     if((btnState & MK_LBUTTON) != 0)
     {
         // Make each pixel correspond to a quarter of a degree.
-        f32 dx = XMConvertToRadians(0.25f*static_cast<float>(x - mLastMousePos.x));
-        f32 dy = XMConvertToRadians(0.25f*static_cast<float>(y - mLastMousePos.y));
+        float dx = XMConvertToRadians(0.25f * static_cast<float>(x - mLastMousePos.x));
+        float dy = XMConvertToRadians(0.25f * static_cast<float>(y - mLastMousePos.y));
 
         // Update angles based on input to orbit camera around box.
         mTheta += dx;
@@ -319,8 +327,8 @@ void LandAndWavesApp::OnMouseMove(WPARAM btnState, i32 x, i32 y)
     else if((btnState & MK_RBUTTON) != 0)
     {
         // Make each pixel correspond to 0.2 unit in the scene.
-        f32 dx = 0.2f*static_cast<float>(x - mLastMousePos.x);
-        f32 dy = 0.2f*static_cast<float>(y - mLastMousePos.y);
+        float dx = 0.2f * static_cast<float>(x - mLastMousePos.x);
+        float dy = 0.2f * static_cast<float>(y - mLastMousePos.y);
 
         // Update the camera radius based on input.
         mRadius += dx - dy;
@@ -333,15 +341,26 @@ void LandAndWavesApp::OnMouseMove(WPARAM btnState, i32 x, i32 y)
     mLastMousePos.y = y;
 }
 
-void LandAndWavesApp::OnKeyboardInput(const GameTimer& gt)
+void LitWavesApp::OnKeyboardInput(const GameTimer& gt)
 {
-    if(GetAsyncKeyState('1') & 0x8000)
-        mIsWireframe = true;
-    else
-        mIsWireframe = false;
+	const float dt = gt.DeltaTime();
+
+	if(GetAsyncKeyState(VK_LEFT) & 0x8000)
+		mSunTheta -= 1.0f * dt;
+
+	if(GetAsyncKeyState(VK_RIGHT) & 0x8000)
+		mSunTheta += 1.0f * dt;
+
+	if(GetAsyncKeyState(VK_UP) & 0x8000)
+		mSunPhi -= 1.0f * dt;
+
+	if(GetAsyncKeyState(VK_DOWN) & 0x8000)
+		mSunPhi += 1.0f * dt;
+
+	mSunPhi = MathHelper::Clamp(mSunPhi, 0.1f, XM_PIDIV2);
 }
 
-void LandAndWavesApp::UpdateCamera(const GameTimer& gt)
+void LitWavesApp::UpdateCamera(const GameTimer& gt)
 {
 	// Convert Spherical to Cartesian coordinates.
 	mEyePos.x = mRadius*sinf(mPhi)*cosf(mTheta);
@@ -357,9 +376,9 @@ void LandAndWavesApp::UpdateCamera(const GameTimer& gt)
 	XMStoreFloat4x4(&mView, view);
 }
 
-void LandAndWavesApp::UpdateObjectCBs(const GameTimer& gt)
+void LitWavesApp::UpdateObjectCBs(const GameTimer& gt)
 {
-	auto currObjectCB = mCurrFrameResource->ObjectCB.get();
+	UploadBuffer<ObjectConstants>* currObjectCB = mCurrFrameResource->ObjectCB.get();
 	for(auto& e : mAllRitems)
 	{
 		// Only update the cbuffer data if the constants have changed.  
@@ -367,6 +386,7 @@ void LandAndWavesApp::UpdateObjectCBs(const GameTimer& gt)
 		if(e->NumFramesDirty > 0)
 		{
 			XMMATRIX world = XMLoadFloat4x4(&e->World);
+			XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
 
 			ObjectConstants objConstants;
 			XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(world));
@@ -379,7 +399,32 @@ void LandAndWavesApp::UpdateObjectCBs(const GameTimer& gt)
 	}
 }
 
-void LandAndWavesApp::UpdateMainPassCB(const GameTimer& gt)
+void LitWavesApp::UpdateMaterialCBs(const GameTimer& gt)
+{
+	UploadBuffer<MaterialConstants>* currMaterialCB = mCurrFrameResource->MaterialCB.get();
+	for(auto& e : mMaterials)
+	{
+		// Only update the cbuffer data if the constants have changed.  If the cbuffer
+		// data changes, it needs to be updated for each FrameResource.
+		Material* mat = e.second.get();
+		if(mat->NumFramesDirty > 0)
+		{
+			XMMATRIX matTransform = XMLoadFloat4x4(&mat->MatTransform);
+
+			MaterialConstants matConstants;
+			matConstants.DiffuseAlbedo = mat->DiffuseAlbedo;
+			matConstants.FresnelR0 = mat->FresnelR0;
+			matConstants.Roughness = mat->Roughness;
+
+			currMaterialCB->CopyData(mat->MatCBIndex, matConstants);
+
+			// Next FrameResource need to be updated too.
+			mat->NumFramesDirty--;
+		}
+	}
+}
+
+void LitWavesApp::UpdateMainPassCB(const GameTimer& gt)
 {
 	XMMATRIX view = XMLoadFloat4x4(&mView);
 	XMMATRIX proj = XMLoadFloat4x4(&mProj);
@@ -396,29 +441,35 @@ void LandAndWavesApp::UpdateMainPassCB(const GameTimer& gt)
 	XMStoreFloat4x4(&mMainPassCB.ViewProj, XMMatrixTranspose(viewProj));
 	XMStoreFloat4x4(&mMainPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
 	mMainPassCB.EyePosW = mEyePos;
-	mMainPassCB.RenderTargetSize = XMFLOAT2((float)mClientWidth, (float)mClientHeight);
+	mMainPassCB.RenderTargetSize = XMFLOAT2((f32)mClientWidth, (f32)mClientHeight);
 	mMainPassCB.InvRenderTargetSize = XMFLOAT2(1.0f / mClientWidth, 1.0f / mClientHeight);
 	mMainPassCB.NearZ = 1.0f;
 	mMainPassCB.FarZ = 1000.0f;
 	mMainPassCB.TotalTime = gt.TotalTime();
 	mMainPassCB.DeltaTime = gt.DeltaTime();
+	mMainPassCB.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
 
-	auto currPassCB = mCurrFrameResource->PassCB.get();
+	XMVECTOR lightDir = -MathHelper::SphericalToCartesian(1.0f, mSunTheta, mSunPhi);
+
+	XMStoreFloat3(&mMainPassCB.Lights[0].Direction, lightDir);
+	mMainPassCB.Lights[0].Strength = { 1.0f, 0.1f, 0.1f };
+
+	UploadBuffer<PassConstants>* currPassCB = mCurrFrameResource->PassCB.get();
 	currPassCB->CopyData(0, mMainPassCB);
 }
 
-void LandAndWavesApp::UpdateWaves(const GameTimer& gt)
+void LitWavesApp::UpdateWaves(const GameTimer& gt)
 {
 	// Every quarter second, generate a random wave.
-	static f32 t_base = 0.0f;
+	static float t_base = 0.0f;
 	if((mTimer.TotalTime() - t_base) >= 0.25f)
 	{
 		t_base += 0.25f;
 
-		i32 i = MathHelper::Rand(4, mWaves->RowCount() - 5);
-		i32 j = MathHelper::Rand(4, mWaves->ColumnCount() - 5);
+		int i = MathHelper::Rand(4, mWaves->RowCount() - 5);
+		int j = MathHelper::Rand(4, mWaves->ColumnCount() - 5);
 
-		f32 r = MathHelper::RandF(0.2f, 0.5f);
+		float r = MathHelper::RandF(0.2f, 0.5f);
 
 		mWaves->Disturb(i, j, r);
 	}
@@ -427,13 +478,13 @@ void LandAndWavesApp::UpdateWaves(const GameTimer& gt)
 	mWaves->Update(gt.DeltaTime());
 
 	// Update the wave vertex buffer with the new solution.
-	UploadBuffer<Vertex>* currWavesVB = mCurrFrameResource->WavesVB.get();
-	for(i32 i = 0; i < mWaves->VertexCount(); ++i)
+	auto currWavesVB = mCurrFrameResource->WavesVB.get();
+	for(int i = 0; i < mWaves->VertexCount(); ++i)
 	{
 		Vertex v;
 
 		v.Pos = mWaves->Position(i);
-        v.Color = XMFLOAT4(DirectX::Colors::Blue);
+		v.Normal = mWaves->Normal(i);
 
 		currWavesVB->CopyData(i, v);
 	}
@@ -442,22 +493,23 @@ void LandAndWavesApp::UpdateWaves(const GameTimer& gt)
 	mWavesRitem->Geo->VertexBufferGPU = currWavesVB->Resource();
 }
 
-void LandAndWavesApp::BuildRootSignature()
+void LitWavesApp::BuildRootSignature()
 {
     // Root parameter can be a table, root descriptor or root constants.
-    CD3DX12_ROOT_PARAMETER slotRootParameter[2];
+    CD3DX12_ROOT_PARAMETER slotRootParameter[3];
 
     // Create root CBV.
     slotRootParameter[0].InitAsConstantBufferView(0);
     slotRootParameter[1].InitAsConstantBufferView(1);
+    slotRootParameter[2].InitAsConstantBufferView(2);
 
     // A root signature is an array of root parameters.
 	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(
-        2, 
-        slotRootParameter,
-        0, 
-        nullptr, 
-        D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
+		3, 
+		slotRootParameter, 
+		0, 
+		nullptr,
+		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
     // create a root signature with a single slot which points to a descriptor range consisting of a single constant buffer
     ComPtr<ID3DBlob> serializedRootSig = nullptr;
@@ -469,7 +521,6 @@ void LandAndWavesApp::BuildRootSignature()
     {
         ::OutputDebugStringA((char*)errorBlob->GetBufferPointer());
     }
-
     ThrowIfFailed(hr);
 
     ThrowIfFailed(md3dDevice->CreateRootSignature(
@@ -479,19 +530,19 @@ void LandAndWavesApp::BuildRootSignature()
         IID_PPV_ARGS(mRootSignature.GetAddressOf())));
 }
 
-void LandAndWavesApp::BuildShadersAndInputLayout()
+void LitWavesApp::BuildShadersAndInputLayout()
 {
-	mShaders["standardVS"] = d3dUtil::CompileShader(L"D:\\dev\\d3d12_book\\src\\Chapter7\\LandWave\\Shaders\\color.hlsl", nullptr, "VS", "vs_5_0");
-	mShaders["opaquePS"] = d3dUtil::CompileShader(L"D:\\dev\\d3d12_book\\src\\Chapter7\\LandWave\\Shaders\\color.hlsl", nullptr, "PS", "ps_5_0");
+	mShaders["standardVS"] = d3dUtil::CompileShader(L"C:\\dev\\d3d12_book\\src\\Chapter8\\Exercises\\1\\Shaders\\Default.hlsl", nullptr, "VS", "vs_5_0");
+	mShaders["opaquePS"] = d3dUtil::CompileShader(L"C:\\dev\\d3d12_book\\src\\Chapter8\\Exercises\\1\\Shaders\\Default.hlsl", nullptr, "PS", "ps_5_0");
 
     mInputLayout =
     {
         { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        { "COLOR", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
     };
 }
 
-void LandAndWavesApp::BuildLandGeometry()
+void LitWavesApp::BuildLandGeometry()
 {
 	GeometryGenerator geoGen;
 	GeometryGenerator::MeshData grid = geoGen.CreateGrid(160.0f, 160.0f, 50, 50);
@@ -502,42 +553,16 @@ void LandAndWavesApp::BuildLandGeometry()
 	std::vector<Vertex> vertices(grid.Vertices.size());
 	for(size_t i = 0; i < grid.Vertices.size(); ++i)
 	{
-		DX::XMFLOAT3& p = grid.Vertices[i].Position;
+		XMFLOAT3& p = grid.Vertices[i].Position;
 		vertices[i].Pos = p;
 		vertices[i].Pos.y = GetHillsHeight(p.x, p.z);
-
-        // Color the vertex based on its height.
-        if(vertices[i].Pos.y < -10.0f)
-        {
-            // Sandy beach color.
-            vertices[i].Color = XMFLOAT4(1.0f, 0.96f, 0.62f, 1.0f);
-        }
-        else if(vertices[i].Pos.y < 5.0f)
-        {
-            // Light yellow-green.
-            vertices[i].Color = XMFLOAT4(0.48f, 0.77f, 0.46f, 1.0f);
-        }
-        else if(vertices[i].Pos.y < 12.0f)
-        {
-            // Dark yellow-green.
-            vertices[i].Color = XMFLOAT4(0.1f, 0.48f, 0.19f, 1.0f);
-        }
-        else if(vertices[i].Pos.y < 20.0f)
-        {
-            // Dark brown.
-            vertices[i].Color = XMFLOAT4(0.45f, 0.39f, 0.34f, 1.0f);
-        }
-        else
-        {
-            // White snow.
-            vertices[i].Color = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-        }
+		vertices[i].Normal = GetHillsNormal(p.x, p.z);
 	}
-    
-	const u32 vbByteSize = (u32)vertices.size() * sizeof(Vertex);
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
 
 	std::vector<std::uint16_t> indices = grid.GetIndices16();
-	const u32 ibByteSize = (u32)indices.size() * sizeof(std::uint16_t);
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
 	geo->Name = "landGeo";
@@ -560,7 +585,7 @@ void LandAndWavesApp::BuildLandGeometry()
 	geo->IndexBufferByteSize = ibByteSize;
 
 	SubmeshGeometry submesh;
-	submesh.IndexCount = (u32)indices.size();
+	submesh.IndexCount = (UINT)indices.size();
 	submesh.StartIndexLocation = 0;
 	submesh.BaseVertexLocation = 0;
 
@@ -569,20 +594,20 @@ void LandAndWavesApp::BuildLandGeometry()
 	mGeometries["landGeo"] = std::move(geo);
 }
 
-void LandAndWavesApp::BuildWavesGeometryBuffers()
+void LitWavesApp::BuildWavesGeometryBuffers()
 {
-	std::vector<u16> indices(3 * mWaves->TriangleCount()); // 3 indices per face
+	std::vector<std::uint16_t> indices(3 * mWaves->TriangleCount()); // 3 indices per face
 	assert(mWaves->VertexCount() < 0x0000ffff);
 
 	// Iterate over each quad.
-	i32 m = mWaves->RowCount();
-	i32 n = mWaves->ColumnCount();
-	i32 k = 0;
-	for(i32 i = 0; i < m - 1; ++i)
+	int m = mWaves->RowCount();
+	int n = mWaves->ColumnCount();
+	int k = 0;
+	for(int i = 0; i < m - 1; ++i)
 	{
-		for(i32 j = 0; j < n - 1; ++j)
+		for(int j = 0; j < n - 1; ++j)
 		{
-			indices[k] = i * n + j;
+			indices[k] = i*n + j;
 			indices[k + 1] = i*n + j + 1;
 			indices[k + 2] = (i + 1)*n + j;
 
@@ -594,10 +619,10 @@ void LandAndWavesApp::BuildWavesGeometryBuffers()
 		}
 	}
 
-	u32 vbByteSize = mWaves->VertexCount() * sizeof(Vertex);
-	u32 ibByteSize = (u32)indices.size() * sizeof(u16);
+	UINT vbByteSize = mWaves->VertexCount()*sizeof(Vertex);
+	UINT ibByteSize = (UINT)indices.size()*sizeof(std::uint16_t);
 
-	std::unique_ptr<MeshGeometry> geo = std::make_unique<MeshGeometry>();
+	auto geo = std::make_unique<MeshGeometry>();
 	geo->Name = "waterGeo";
 
 	// Set dynamically.
@@ -616,7 +641,7 @@ void LandAndWavesApp::BuildWavesGeometryBuffers()
 	geo->IndexBufferByteSize = ibByteSize;
 
 	SubmeshGeometry submesh;
-	submesh.IndexCount = (u32)indices.size();
+	submesh.IndexCount = (UINT)indices.size();
 	submesh.StartIndexLocation = 0;
 	submesh.BaseVertexLocation = 0;
 
@@ -625,13 +650,13 @@ void LandAndWavesApp::BuildWavesGeometryBuffers()
 	mGeometries["waterGeo"] = std::move(geo);
 }
 
-void LandAndWavesApp::BuildPSOs()
+void LitWavesApp::BuildPSOs()
 {
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc;
 
 	// PSO for opaque objects.
 	ZeroMemory(&opaquePsoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-	opaquePsoDesc.InputLayout = { mInputLayout.data(), (u32)mInputLayout.size() };
+	opaquePsoDesc.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() };
 	opaquePsoDesc.pRootSignature = mRootSignature.Get();
 	opaquePsoDesc.VS =
 	{
@@ -654,30 +679,51 @@ void LandAndWavesApp::BuildPSOs()
 	opaquePsoDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
 	opaquePsoDesc.DSVFormat = mDepthStencilFormat;
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs["opaque"])));
-
-    // PSO for opaque wireframe objects.
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC opaqueWireframePsoDesc = opaquePsoDesc;
-    opaqueWireframePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
-    ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaqueWireframePsoDesc, IID_PPV_ARGS(&mPSOs["opaque_wireframe"])));
 }
 
-void LandAndWavesApp::BuildFrameResources()
+void LitWavesApp::BuildFrameResources()
 {
     for(i32 i = 0; i < gNumFrameResources; ++i)
     {
-        mFrameResources.push_back(std::make_unique<FrameResource>(
-			md3dDevice.Get(),
-            1, 
-			(u32)mAllRitems.size(),
-			mWaves->VertexCount()));
+        mFrameResources.push_back(
+			std::make_unique<FrameResource>(
+				md3dDevice.Get(),
+				1, 
+				(UINT)mAllRitems.size(),
+				(UINT)mMaterials.size(),
+				mWaves->VertexCount())
+			);
     }
 }
 
-void LandAndWavesApp::BuildRenderItems()
+void LitWavesApp::BuildMaterials()
+{
+	std::unique_ptr<Material> grass = std::make_unique<Material>();
+	grass->Name = "grass";
+	grass->MatCBIndex = 0;
+    grass->DiffuseAlbedo = XMFLOAT4(0.2f, 0.6f, 0.2f, 1.0f);
+    grass->FresnelR0 = XMFLOAT3(0.01f, 0.01f, 0.01f);
+    grass->Roughness = 0.125f;
+
+    // This is not a good water material definition, but we do not have all the rendering
+    // tools we need (transparency, environment reflection), so we fake it for now.
+	std::unique_ptr<Material> water = std::make_unique<Material>();
+	water->Name = "water";
+	water->MatCBIndex = 1;
+    water->DiffuseAlbedo = XMFLOAT4(0.0f, 0.2f, 0.6f, 1.0f);
+    water->FresnelR0 = XMFLOAT3(0.1f, 0.1f, 0.1f);
+    water->Roughness = 0.0f;
+
+	mMaterials["grass"] = std::move(grass);
+	mMaterials["water"] = std::move(water);
+}
+
+void LitWavesApp::BuildRenderItems()
 {
 	std::unique_ptr<RenderItem> wavesRitem = std::make_unique<RenderItem>();
 	wavesRitem->World = MathHelper::Identity4x4();
 	wavesRitem->ObjCBIndex = 0;
+	wavesRitem->Mat = mMaterials["water"].get();
 	wavesRitem->Geo = mGeometries["waterGeo"].get();
 	wavesRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	wavesRitem->IndexCount = wavesRitem->Geo->DrawArgs["grid"].IndexCount;
@@ -686,28 +732,31 @@ void LandAndWavesApp::BuildRenderItems()
 
 	mWavesRitem = wavesRitem.get();
 
-	mRitemLayer[(int)RenderLayer::Opaque].push_back(wavesRitem.get());
+	mRitemLayer[(i32)RenderLayer::Opaque].push_back(wavesRitem.get());
 
 	std::unique_ptr<RenderItem> gridRitem = std::make_unique<RenderItem>();
 	gridRitem->World = MathHelper::Identity4x4();
 	gridRitem->ObjCBIndex = 1;
+	gridRitem->Mat = mMaterials["grass"].get();
 	gridRitem->Geo = mGeometries["landGeo"].get();
 	gridRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	gridRitem->IndexCount = gridRitem->Geo->DrawArgs["grid"].IndexCount;
 	gridRitem->StartIndexLocation = gridRitem->Geo->DrawArgs["grid"].StartIndexLocation;
 	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
 
-	mRitemLayer[(int)RenderLayer::Opaque].push_back(gridRitem.get());
+	mRitemLayer[(i32)RenderLayer::Opaque].push_back(gridRitem.get());
 
 	mAllRitems.push_back(std::move(wavesRitem));
 	mAllRitems.push_back(std::move(gridRitem));
 }
 
-void LandAndWavesApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)
+void LitWavesApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)
 {
-	u32 objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
+	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
+	UINT matCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
 
 	ID3D12Resource* objectCB = mCurrFrameResource->ObjectCB->Resource();
+	ID3D12Resource* matCB = mCurrFrameResource->MaterialCB->Resource();
 
 	// For each render item...
 	for(size_t i = 0; i < ritems.size(); ++i)
@@ -718,27 +767,28 @@ void LandAndWavesApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const 
 		cmdList->IASetIndexBuffer(&ri->Geo->IndexBufferView());
 		cmdList->IASetPrimitiveTopology(ri->PrimitiveType);
 
-        D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress();
-        objCBAddress += ri->ObjCBIndex * objCBByteSize;
+		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + ri->ObjCBIndex * objCBByteSize;
+		D3D12_GPU_VIRTUAL_ADDRESS matCBAddress = matCB->GetGPUVirtualAddress() + ri->Mat->MatCBIndex * matCBByteSize;
 
 		cmdList->SetGraphicsRootConstantBufferView(0, objCBAddress);
+		cmdList->SetGraphicsRootConstantBufferView(1, matCBAddress);
 
 		cmdList->DrawIndexedInstanced(ri->IndexCount, 1, ri->StartIndexLocation, ri->BaseVertexLocation, 0);
 	}
 }
 
-f32 LandAndWavesApp::GetHillsHeight(f32 x, f32 z)const
+float LitWavesApp::GetHillsHeight(float x, float z)const
 {
     return 0.3f * (z * sinf(0.1f * x) + x * cosf(0.1f * z));
 }
 
-XMFLOAT3 LandAndWavesApp::GetHillsNormal(f32 x, f32 z)const
+XMFLOAT3 LitWavesApp::GetHillsNormal(float x, float z)const
 {
     // n = (-df/dx, 1, -df/dz)
     XMFLOAT3 n(
         -0.03f * z * cosf(0.1f * x) - 0.3f * cosf(0.1f * z),
         1.0f,
-        -0.3f * sinf(0.1f * x) + 0.03f * x* sinf(0.1f * z));
+        -0.3f * sinf(0.1f * x) + 0.03f * x * sinf(0.1f * z));
 
     XMVECTOR unitNormal = XMVector3Normalize(XMLoadFloat3(&n));
     XMStoreFloat3(&n, unitNormal);

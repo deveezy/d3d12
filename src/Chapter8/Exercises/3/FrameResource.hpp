@@ -17,14 +17,14 @@ struct PassConstants
     DirectX::XMFLOAT4X4 InvProj = MathHelper::Identity4x4();
     DirectX::XMFLOAT4X4 ViewProj = MathHelper::Identity4x4();
     DirectX::XMFLOAT4X4 InvViewProj = MathHelper::Identity4x4();
-    DirectX::XMFLOAT3 EyePosW = { 0.0f, 0.0f, 0.0f };
-    f32 cbPerObjectPad1 = 0.0f;
-    DirectX::XMFLOAT2 RenderTargetSize = { 0.0f, 0.0f };
-    DirectX::XMFLOAT2 InvRenderTargetSize = { 0.0f, 0.0f };
-    f32 NearZ = 0.0f;
-    f32 FarZ = 0.0f;
-    f32 TotalTime = 0.0f;
-    f32 DeltaTime = 0.0f;
+    DirectX::XMFLOAT3 EyePosW = { .0f, .0f, .0f };
+    f32 cbPerObjectPad1 = .0f;
+    DirectX::XMFLOAT2 RenderTargetSize = { .0f, .0f };
+    DirectX::XMFLOAT2 InvRenderTargetSize = { .0f, .0f };
+    f32 NearZ = .0f;
+    f32 FarZ  = .0f;
+    f32 TotalTime = .0f;
+    f32 DeltaTime = .0f;
 
     DirectX::XMFLOAT4 AmbientLight = { 0.0f, 0.0f, 0.0f, 1.0f };
 
@@ -42,11 +42,10 @@ struct Vertex
 };
 
 // Stores the resources needed for the CPU to build the command lists
-// for a frame.  
+// for a frame.
 struct FrameResource
 {
-public:
-    FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount, UINT waveVertCount);
+    FrameResource(ID3D12Device* device, u32 passCount, u32 objectCount, u32 materialCount);
     FrameResource(const FrameResource& rhs) = delete;
     FrameResource& operator=(const FrameResource& rhs) = delete;
     ~FrameResource();
@@ -56,17 +55,12 @@ public:
     Microsoft::WRL::ComPtr<ID3D12CommandAllocator> CmdListAlloc;
 
     // We cannot update a cbuffer until the GPU is done processing the commands
-    // that reference it.  So each frame needs their own cbuffers.
-    // std::unique_ptr<UploadBuffer<FrameConstants>> FrameCB = nullptr;
+    // that reference it. So each frame needs their own cbuffers.
     std::unique_ptr<UploadBuffer<PassConstants>> PassCB = nullptr;
     std::unique_ptr<UploadBuffer<MaterialConstants>> MaterialCB = nullptr;
     std::unique_ptr<UploadBuffer<ObjectConstants>> ObjectCB = nullptr;
 
-    // We cannot update a dynamic vertex buffer until the GPU is done processing
-    // the commands that reference it.  So each frame needs their own.
-    std::unique_ptr<UploadBuffer<Vertex>> WavesVB = nullptr;
-
-    // Fence value to mark commands up to this fence point.  This lets us
+    // Fence value to mark commands up to this fence point. This lets us
     // check if these frame resources are still in use by the GPU.
-    UINT64 Fence = 0;
+    u64 Fence = 0;
 };

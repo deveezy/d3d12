@@ -1,6 +1,7 @@
 #include <Common/d3dApp.hpp>
 #include <Windowsx.h> 
 #include <cassert>
+#include <d3d12sdklayers.h>
 
 using Microsoft::WRL::ComPtr;
 
@@ -56,6 +57,7 @@ void D3DApp::Set4xMsaaState(bool value)
 {
     if (m4xMsaaState != value) 
     {
+        m4xMsaaState = value;
         // Recreate the swapchain and buffer with new multisample settings.
         CreateSwapChain();
         OnResize();
@@ -308,17 +310,23 @@ bool D3DApp::Initialize()
     return true;
 }
 
+void EnableShaderBasedValidation()
+{
+    ComPtr<ID3D12Debug> spDebugController0;
+    ComPtr<ID3D12Debug1> spDebugController1;
+    ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&spDebugController0)));
+    ThrowIfFailed(spDebugController0->QueryInterface(IID_PPV_ARGS(&spDebugController1)));
+    spDebugController1->SetEnableGPUBasedValidation(true);
+    spDebugController0->EnableDebugLayer();
+    spDebugController1->SetEnableSynchronizedCommandQueueValidation(true);
+}
+
 bool D3DApp::InitDirect3D() 
 {
-    #ifdef NICE
-    int a = 10;
-    #endif
 #if defined(DEBUG) || defined(_DEBUG) 
     //Enable the d312 debug layer.
-    ComPtr<ID3D12Debug> debugController;
-    ThrowIfFailed(D3D12GetDebugInterface(IID_PPV_ARGS(&debugController)));
+    EnableShaderBasedValidation(); 
 #endif
-
     ThrowIfFailed(CreateDXGIFactory1(IID_PPV_ARGS(&mdxgiFactory)));
     // Try to create hardware device.
     HRESULT hardwareResult = D3D12CreateDevice(
@@ -613,10 +621,10 @@ void D3DApp::CalculateFrameStats()
 
 void D3DApp::LogAdapters() 
 {
-    u32 i = 0;
+    u32 adapter_num = 0;
     IDXGIAdapter* adapter = nullptr;
     std::vector<IDXGIAdapter*> adapterList;
-    while (mdxgiFactory->EnumAdapters(i, &adapter) != DXGI_ERROR_NOT_FOUND) 
+    while (mdxgiFactory->EnumAdapters(adapter_num, &adapter) != DXGI_ERROR_NOT_FOUND) 
     {
         DXGI_ADAPTER_DESC desc;
         adapter->GetDesc(&desc);
@@ -628,7 +636,7 @@ void D3DApp::LogAdapters()
         OutputDebugString(text.c_str());
         adapterList.push_back(adapter);
 
-        ++i;
+        ++adapter_num;
     }
 
     for (size_t i = 0; i < adapterList.size(); ++i)
