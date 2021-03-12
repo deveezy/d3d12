@@ -303,17 +303,34 @@ void ShapesApp::UpdateMainPassCB(const GameTimer& gt)
     mMainPassCB.DeltaTime = gt.DeltaTime();
     mMainPassCB.AmbientLight = { .0f, .0f, .0f, 1.f };
 
-    // DX::XMVECTOR toLight = MathHelper::SphericalToCartesian(1.0f, mSunTheta, mSunPhi);
-	// DirectX::XMVECTOR lightDir = DX::XMVectorNegate(toLight);
+	// mMainPassCB.Lights[0].Position = {0.f, 3.f, 0.f};
 
-    // DX::XMStoreFloat3(&mMainPassCB.Lights[0].Direction, lightDir);
-    // mMainPassCB.Lights[0].Direction = { 0.57735f, -0.57735f, 0.57735f };
-	// mMainPassCB.Lights[0].Strength = { 0.6f, 0.6f, 0.6f };
-	// mMainPassCB.Lights[1].Direction = { -0.57735f, -0.57735f, 0.57735f };
-	// mMainPassCB.Lights[1].Strength = { 0.3f, 0.3f, 0.3f };
-	// mMainPassCB.Lights[2].Direction = { 0.0f, -0.707f, -0.707f };
-	// mMainPassCB.Lights[2].Strength = { 0.15f, 0.15f, 0.15f };
-	mMainPassCB.Lights[0].Strength = {1.f, 1.f, 1.f};
+    size_t light_idx = 0;
+    size_t i = 0;
+    for (const auto& item : mRitemLayer[(i32)RenderLayer::Opaque])
+    {
+        if (light_idx == 4 || light_idx == 5 ||
+            light_idx == 8 || light_idx == 9 || 
+            light_idx == 12 || light_idx == 13 || 
+            light_idx == 16 || light_idx == 17 || 
+            light_idx == 20 || light_idx == 21)
+        {
+            DX::XMMATRIX item_world = DX::XMLoadFloat4x4(&item->World);
+            DX::XMMATRIX translationMat = DX::XMMatrixTranslation(.0f, 3.f, .0);
+            DX::XMMATRIX pointLightMat = DX::XMMatrixMultiply(item_world, translationMat);
+            DX::XMFLOAT4 pos4f = { 0.0f, 0.0f, 0.0f, 1.0f } ;
+            DX::XMVECTOR pos4Vec = DX::XMLoadFloat4(&pos4f);
+            DX::XMVECTOR world_position = DX::XMVector4Transform(pos4Vec, pointLightMat);
+            DX::XMFLOAT4 temp_vec;
+            DX::XMStoreFloat4(&temp_vec, world_position);
+            DX::XMFLOAT3 final_position(temp_vec.x, temp_vec.y, temp_vec.z);
+            mMainPassCB.Lights[i].Strength = {1.f, 1.f, 1.f};
+            
+            mMainPassCB.Lights[i].Position = final_position;
+            ++i;
+        }
+        light_idx++;
+    }
 
     UploadBuffer<PassConstants>* currPassCB = mCurrFrameResource->PassCB.get();
     currPassCB->CopyData(0, mMainPassCB);
@@ -389,7 +406,6 @@ void ShapesApp::BuildShapeGeometry()
     GeometryGenerator::MeshData grid     = geoGen.CreateGrid(20.f, 30.f, 60, 40);
     GeometryGenerator::MeshData sphere   = geoGen.CreateSphere(.5f, 20, 20);
     GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
-    // GeometryGenerator::MeshData lamp     = geoGen.CreateSphere(.1, 20, 20);
 
     // We are concatenating all the geometry into one big vertex/index buffer. So
     // define the regions in the buffer each submesh covers.
@@ -399,14 +415,12 @@ void ShapesApp::BuildShapeGeometry()
     u32 gridVertexOffset = (u32)box.Vertices.size();
     u32 sphereVertexOffset = gridVertexOffset + (u32)grid.Vertices.size();
     u32 cylinderVertexOffset = sphereVertexOffset + (u32)sphere.Vertices.size();
-    // u32 lampVertexOffset = cylinderVertexOffset + (u32)lamp.Vertices.size();
 
     // Cache the index offsets to each object in the concatenated index buffer.
     u32 boxIndexOffset = 0u;
     u32 gridIndexOffset = (u32)box.Indices32.size();
     u32 sphereIndexOffset = gridIndexOffset + (u32)grid.Indices32.size();
     u32 cylinderIndexOffset = sphereIndexOffset + (u32)sphere.Indices32.size();
-    // u32 lampIndexOffset = cylinderIndexOffset + (u32)lamp.Indices32.size();
 
     // Define the SubmeshGeometry that cover different 
     // regions of the vertex/index buffers.
@@ -430,12 +444,6 @@ void ShapesApp::BuildShapeGeometry()
     cylinderSubmesh.StartIndexLocation = cylinderIndexOffset;
     cylinderSubmesh.BaseVertexLocation = cylinderVertexOffset;
 
-    // SubmeshGeometry lampSubmesh;
-    // lampSubmesh.IndexCount = (u32)lamp.Indices32.size();
-    // lampSubmesh.StartIndexLocation = lampIndexOffset;
-    // lampSubmesh.BaseVertexLocation = lampVertexOffset;
-
-
     // Extract the vertex elements we are interested in and pack the 
     // vertices of all the meshes into one vertex buffer.
 
@@ -444,7 +452,6 @@ void ShapesApp::BuildShapeGeometry()
         grid.Vertices.size() +
         sphere.Vertices.size() +
         cylinder.Vertices.size(); 
-        // lamp.Vertices.size();
     
     std::vector<Vertex> vertices(totalVertexCount);
 
@@ -473,18 +480,11 @@ void ShapesApp::BuildShapeGeometry()
 		vertices[k].Normal = cylinder.Vertices[i].Normal;
 	}
     
-    // for (size_t  i = 0; i < lamp.Vertices.size(); ++i, ++k)
-    // {
-    //     vertices[k].Pos = lamp.Vertices[i].Position;
-	// 	vertices[k].Normal = lamp.Vertices[i].Normal;
-    // }
-    
     std::vector<u16> indices;
     indices.insert(indices.end(), std::begin(box.GetIndices16()), std::end(box.GetIndices16()));
 	indices.insert(indices.end(), std::begin(grid.GetIndices16()), std::end(grid.GetIndices16()));
 	indices.insert(indices.end(), std::begin(sphere.GetIndices16()), std::end(sphere.GetIndices16()));
 	indices.insert(indices.end(), std::begin(cylinder.GetIndices16()), std::end(cylinder.GetIndices16()));
-	// indices.insert(indices.end(), std::begin(lamp.GetIndices16()), std::end(lamp.GetIndices16()));
 
     const u32 vbByteSize = (u32)vertices.size() * sizeof(Vertex);
     const u32 ibByteSize = (u32)indices.size() * sizeof(u16);
@@ -521,7 +521,6 @@ void ShapesApp::BuildShapeGeometry()
     geo->DrawArgs["grid"] = gridSubmesh;
     geo->DrawArgs["sphere"] = sphereSubmesh;
     geo->DrawArgs["cylinder"] = cylinderSubmesh;
-    // geo->DrawArgs["lamp"] = lampSubmesh;
 
     mGeometries[geo->Name] = std::move(geo);
 }
@@ -595,9 +594,6 @@ void ShapesApp::BuildRenderItems()
 		std::unique_ptr<RenderItem> leftSphereRenderItem = std::make_unique<RenderItem>();
 		std::unique_ptr<RenderItem> rightSphereRenderItem = std::make_unique<RenderItem>();
 
-		// std::unique_ptr<PointLightItem> rightLampRenderItem = std::make_unique<PointLightItem>();
-        // std::unique_ptr<PointLightItem> leftLampRenderItem = std::make_unique<PointLightItem>();
-
         DX::XMMATRIX leftCylWorld = DX::XMMatrixTranslation(-5.0f, 1.5f, -10.0f + i * 5.0f);
 		DX::XMMATRIX rightCylWorld = DX::XMMatrixTranslation(+5.0f, 1.5f, -10.0f + i * 5.0f);
 
@@ -640,32 +636,10 @@ void ShapesApp::BuildRenderItems()
 		rightSphereRenderItem->StartIndexLocation = rightSphereRenderItem->Geo->DrawArgs["sphere"].StartIndexLocation;
 		rightSphereRenderItem->BaseVertexLocation = rightSphereRenderItem->Geo->DrawArgs["sphere"].BaseVertexLocation;
 
-        // DX::XMMATRIX leftShperePointLight  = DX::XMMatrixTranslation(-5.0f, 5.5f, -10.0f + i * 5.0f);
-        // DX::XMMATRIX rightShperePointLight = DX::XMMatrixTranslation(+5.0f, 5.5f, -10.0f + i * 5.0f);
-
-        // DX::XMStoreFloat4x4(&leftLampRenderItem->World, leftShperePointLight);
-        // leftLampRenderItem->Mat = mMaterials["silver"].get();
-		// leftLampRenderItem->Geo = mGeometries["shapeGeo"].get();
-		// leftLampRenderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		// leftLampRenderItem->IndexCount = leftLampRenderItem->Geo->DrawArgs["lamp"].IndexCount;
-		// leftLampRenderItem->StartIndexLocation = leftLampRenderItem->Geo->DrawArgs["lamp"].StartIndexLocation;
-		// leftLampRenderItem->BaseVertexLocation = leftLampRenderItem->Geo->DrawArgs["lamp"].BaseVertexLocation;
-
-		// DX::XMStoreFloat4x4(&rightLampRenderItem->World, rightShperePointLight);
-        // rightLampRenderItem->Mat = mMaterials["silver"].get();
-		// rightLampRenderItem->Geo = mGeometries["shapeGeo"].get();
-		// rightLampRenderItem->PrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		// rightLampRenderItem->IndexCount = rightLampRenderItem->Geo->DrawArgs["lamp"].IndexCount;
-		// rightLampRenderItem->StartIndexLocation = rightLampRenderItem->Geo->DrawArgs["lamp"].StartIndexLocation;
-		// rightLampRenderItem->BaseVertexLocation = rightLampRenderItem->Geo->DrawArgs["lamp"].BaseVertexLocation;
-
-		mRenderItems.push_back(std::move(leftCylRenderItem));
+        mRenderItems.push_back(std::move(leftCylRenderItem));
 		mRenderItems.push_back(std::move(rightCylRenderItem));
 		mRenderItems.push_back(std::move(leftSphereRenderItem));
 		mRenderItems.push_back(std::move(rightSphereRenderItem));
-
-        // mPointLightItems.push_back(std::move(leftLampRenderItem));
-        // mPointLightItems.push_back(std::move(rightLampRenderItem));
     }
 
     // All the render items are opaque.

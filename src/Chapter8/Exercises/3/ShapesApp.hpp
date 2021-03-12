@@ -50,7 +50,6 @@ struct PointLightItem : RenderItem
 enum class RenderLayer : i32 
 {
 	Opaque = 0,
-    PointLights = 1,
 	Count
 };
 
