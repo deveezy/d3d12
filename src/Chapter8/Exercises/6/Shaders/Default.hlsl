@@ -1,21 +1,19 @@
 // Defaults for number of lights.
 #ifndef NUM_DIR_LIGHTS
-    #define NUM_DIR_LIGHTS 0
+    #define NUM_DIR_LIGHTS 1
 #endif
 
 #ifndef NUM_POINT_LIGHTS
-    #define NUM_POINT_LIGHTS 10
+    #define NUM_POINT_LIGHTS 0
 #endif
 
 #ifndef NUM_SPOT_LIGHTS
     #define NUM_SPOT_LIGHTS 0
 #endif
 
-// Include structures and functions for lighting.
 #include "LightingUtils.hlsl"
 
 // Constant data that varies per frame.
-
 cbuffer cbPerObject : register(b0)
 {
     float4x4 gWorld;
@@ -55,6 +53,8 @@ cbuffer cbPass : register(b2)
     Light gLights[MaxLights];
 };
  
+
+
 struct VertexIn
 {
 	float3 PosL    : POSITION;
@@ -94,17 +94,16 @@ float4 PS(VertexOut pin) : SV_Target
     float3 toEyeW = normalize(gEyePosW - pin.PosW);
 
 	// Indirect lighting.
-    float4 ambient = gAmbientLight*gDiffuseAlbedo;
+    float4 ambient = gAmbientLight * gDiffuseAlbedo;
 
     const float shininess = 1.0f - gRoughness;
     Material mat = { gDiffuseAlbedo, gFresnelR0, shininess };
     float3 shadowFactor = 1.0f;
-    
     float4 directLight = ComputeLighting(gLights, mat, pin.PosW,
         pin.NormalW, toEyeW, shadowFactor);
 
     float4 litColor = ambient + directLight;
-    litColor *= sin(gTotalTime * 10);
+
     // Common convention to take alpha from diffuse material.
     litColor.a = gDiffuseAlbedo.a;
 

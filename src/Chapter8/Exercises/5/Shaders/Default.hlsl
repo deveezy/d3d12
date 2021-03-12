@@ -4,11 +4,11 @@
 #endif
 
 #ifndef NUM_POINT_LIGHTS
-    #define NUM_POINT_LIGHTS 10
+    #define NUM_POINT_LIGHTS 5
 #endif
 
 #ifndef NUM_SPOT_LIGHTS
-    #define NUM_SPOT_LIGHTS 0
+    #define NUM_SPOT_LIGHTS 5 
 #endif
 
 // Include structures and functions for lighting.
@@ -104,7 +104,7 @@ float4 PS(VertexOut pin) : SV_Target
         pin.NormalW, toEyeW, shadowFactor);
 
     float4 litColor = ambient + directLight;
-    litColor *= sin(gTotalTime * 10);
+    // litColor *= sin(gTotalTime * 10);
     // Common convention to take alpha from diffuse material.
     litColor.a = gDiffuseAlbedo.a;
 

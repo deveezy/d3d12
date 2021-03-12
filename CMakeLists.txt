@@ -21,11 +21,20 @@ add_executable(${proj} WIN32
     src/Common/MathHelper.cpp 
     src/Common/UploadBuffer.hpp 
 
+    src/Chapter8/Exercises/6/LitWaves/FrameResource.hpp
+    src/Chapter8/Exercises/6/LitWaves/FrameResource.cpp
+    src/Chapter8/Exercises/6/LitWaves/Waves.hpp
+    src/Chapter8/Exercises/6/LitWaves/Waves.cpp
+    src/Chapter8/Exercises/6/LitWaves/LitWavesApp.cpp
 
-    src/Chapter8/Exercises/3/FrameResource.hpp
-    src/Chapter8/Exercises/3/FrameResource.cpp
-    src/Chapter8/Exercises/3/ShapesApp.hpp
-    src/Chapter8/Exercises/3/ShapesApp.cpp
+    # src/Chapter8/Exercises/3/FrameResource.hpp
+    # src/Chapter8/Exercises/3/FrameResource.cpp
+    # src/Chapter8/Exercises/3/ShapesApp.hpp
+    # src/Chapter8/Exercises/3/ShapesApp.cpp
+    # src/Chapter8/Exercises/5/FrameResource.hpp
+    # src/Chapter8/Exercises/5/FrameResource.cpp
+    # src/Chapter8/Exercises/5/ShapesApp.hpp
+    # src/Chapter8/Exercises/5/ShapesApp.cpp
     # src/Chapter8/Exercises/1/FrameResource.hpp
     # src/Chapter8/Exercises/1/FrameResource.cpp
     # src/Chapter8/Exercises/1/Waves.hpp
