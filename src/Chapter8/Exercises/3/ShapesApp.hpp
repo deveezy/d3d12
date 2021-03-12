@@ -28,7 +28,7 @@ struct RenderItem
     i32 NumFramesDirty = gNumFrameResources;
 
     // Index into GPU constant buffer corresponding to the ObjectCB for this render item.
-    u32 ObjCBIndex = -1;
+    i32 ObjCBIndex = -1;
 
     Material* Mat = nullptr;
     MeshGeometry* Geo = nullptr;
@@ -50,6 +50,7 @@ struct PointLightItem : RenderItem
 enum class RenderLayer : i32 
 {
 	Opaque = 0,
+    PointLights = 1,
 	Count
 };
 

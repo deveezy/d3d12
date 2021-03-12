@@ -303,11 +303,17 @@ void ShapesApp::UpdateMainPassCB(const GameTimer& gt)
     mMainPassCB.DeltaTime = gt.DeltaTime();
     mMainPassCB.AmbientLight = { .0f, .0f, .0f, 1.f };
 
-    DX::XMVECTOR toLight = MathHelper::SphericalToCartesian(1.0f, mSunTheta, mSunPhi);
-	DirectX::XMVECTOR lightDir = DX::XMVectorNegate(toLight);
+    // DX::XMVECTOR toLight = MathHelper::SphericalToCartesian(1.0f, mSunTheta, mSunPhi);
+	// DirectX::XMVECTOR lightDir = DX::XMVectorNegate(toLight);
 
-    DX::XMStoreFloat3(&mMainPassCB.Lights[0].Direction, lightDir);
-    mMainPassCB.Lights[0].Strength = { 1.f, 1.f, 1.f };
+    // DX::XMStoreFloat3(&mMainPassCB.Lights[0].Direction, lightDir);
+    // mMainPassCB.Lights[0].Direction = { 0.57735f, -0.57735f, 0.57735f };
+	// mMainPassCB.Lights[0].Strength = { 0.6f, 0.6f, 0.6f };
+	// mMainPassCB.Lights[1].Direction = { -0.57735f, -0.57735f, 0.57735f };
+	// mMainPassCB.Lights[1].Strength = { 0.3f, 0.3f, 0.3f };
+	// mMainPassCB.Lights[2].Direction = { 0.0f, -0.707f, -0.707f };
+	// mMainPassCB.Lights[2].Strength = { 0.15f, 0.15f, 0.15f };
+	mMainPassCB.Lights[0].Strength = {1.f, 1.f, 1.f};
 
     UploadBuffer<PassConstants>* currPassCB = mCurrFrameResource->PassCB.get();
     currPassCB->CopyData(0, mMainPassCB);
