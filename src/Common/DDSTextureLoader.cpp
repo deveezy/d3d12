@@ -746,7 +746,7 @@ static HRESULT FillInitData12(
 	_In_ DXGI_FORMAT format,
 	_In_ size_t maxsize,
 	_In_ size_t bitSize,
-	_In_reads_bytes_(bitSize) const uint8_t* bitData,
+	_In_reads_bytes_(bitSize) const u8* bitData,
 	_Out_ size_t& twidth,
 	_Out_ size_t& theight,
 	_Out_ size_t& tdepth,
@@ -764,8 +764,8 @@ static HRESULT FillInitData12(
 
 	size_t NumBytes = 0;
 	size_t RowBytes = 0;
-	const uint8_t* pSrcBits = bitData;
-	const uint8_t* pEndBits = bitData + bitSize;
+	const u8* pSrcBits = bitData;
+	const u8* pEndBits = bitData + bitSize;
 
 	size_t index = 0;
 	for (size_t j = 0; j < arraySize; j++)
@@ -928,7 +928,7 @@ static HRESULT CreateTextureFromDDS12(
 	_In_ ID3D12Device* device,
 	_In_opt_ ID3D12GraphicsCommandList* cmdList,
 	_In_ const DDS_HEADER* header,
-	_In_reads_bytes_(bitSize) const uint8_t* bitData,
+	_In_reads_bytes_(bitSize) const u8* bitData,
 	_In_ size_t bitSize,
 	_In_ size_t maxsize,
 	_In_ bool forceSRGB,
@@ -941,7 +941,7 @@ static HRESULT CreateTextureFromDDS12(
 	UINT height = header->height;
 	UINT depth = header->depth;
 
-	uint32_t resDim = D3D12_RESOURCE_DIMENSION_UNKNOWN;
+	u32 resDim = D3D12_RESOURCE_DIMENSION_UNKNOWN;
 	UINT arraySize = 1;
 	DXGI_FORMAT format = DXGI_FORMAT_UNKNOWN;
 	bool isCubeMap = false;
@@ -951,7 +951,7 @@ static HRESULT CreateTextureFromDDS12(
 
 	if ((header->ddspf.flags & DDS_FOURCC) && (MAKEFOURCC('D', 'X', '1', '0') == header->ddspf.fourCC))
 	{
-		auto d3d10ext = reinterpret_cast<const DDS_HEADER_DXT10*>((const char*)header + sizeof(DDS_HEADER));
+		const DDS_HEADER_DXT10* d3d10ext = reinterpret_cast<const DDS_HEADER_DXT10*>((const char*)header + sizeof(DDS_HEADER));
 
 		arraySize = d3d10ext->arraySize;
 		if (arraySize == 0)
@@ -959,15 +959,15 @@ static HRESULT CreateTextureFromDDS12(
 
 		switch (d3d10ext->dxgiFormat)
 		{
-		case DXGI_FORMAT_AI44:
-		case DXGI_FORMAT_IA44:
-		case DXGI_FORMAT_P8:
-		case DXGI_FORMAT_A8P8:
-			return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
+            case DXGI_FORMAT_AI44:
+            case DXGI_FORMAT_IA44:
+            case DXGI_FORMAT_P8:
+            case DXGI_FORMAT_A8P8:
+                return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
 
-		default:
-			if (BitsPerPixel(d3d10ext->dxgiFormat) == 0)
-				return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
+            default:
+                if (BitsPerPixel(d3d10ext->dxgiFormat) == 0)
+                    return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
 		}
 
 		format = d3d10ext->dxgiFormat;
@@ -1092,8 +1092,7 @@ static HRESULT CreateTextureFromDDS12(
 
 	// Create the texture
 	std::unique_ptr<D3D12_SUBRESOURCE_DATA[]> initData(
-		new (std::nothrow) D3D12_SUBRESOURCE_DATA[mipCount * arraySize]
-		);
+		new (std::nothrow) D3D12_SUBRESOURCE_DATA[mipCount * arraySize]);
 
 	if (!initData)
 	{
@@ -1107,8 +1106,7 @@ static HRESULT CreateTextureFromDDS12(
 
 	hr = FillInitData12(
 		width, height, depth, mipCount, arraySize, format, maxsize, bitSize, bitData,
-		twidth, theight, tdepth, skipMip, initData.get()
-		);
+		twidth, theight, tdepth, skipMip, initData.get());
 
 	if (SUCCEEDED(hr))
 	{
@@ -1160,13 +1158,12 @@ _Use_decl_annotations_
 HRESULT DirectX::CreateDDSTextureFromMemory12(
 	ID3D12Device* device,
 	_In_ ID3D12GraphicsCommandList* cmdList,
-	_In_reads_bytes_(ddsDataSize) const uint8_t* ddsData,
+	_In_reads_bytes_(ddsDataSize) const u8* ddsData,
 	_In_ size_t ddsDataSize,
 	ComPtr<ID3D12Resource>& texture,
 	ComPtr<ID3D12Resource>& textureUploadHeap,
 	_In_ size_t maxsize,
-	_Out_opt_ DDS_ALPHA_MODE* alphaMode
-	)
+	_Out_opt_ DDS_ALPHA_MODE* alphaMode)
 {
 	if (alphaMode)
 		(*alphaMode) = DDS_ALPHA_MODE_UNKNOWN;
@@ -1256,10 +1253,10 @@ HRESULT DirectX::CreateDDSTextureFromFile12(_In_ ID3D12Device* device,
 	}
 
 	DDS_HEADER* header = nullptr;
-	uint8_t* bitData = nullptr;
+	u8* bitData = nullptr;
 	size_t bitSize = 0;
 
-	std::unique_ptr<uint8_t[]> ddsData;
+	std::unique_ptr<u8[]> ddsData;
 	HRESULT hr = LoadTextureDataFromFile(szFileName, ddsData, &header, &bitData, &bitSize);
 	if (FAILED(hr))
 	{

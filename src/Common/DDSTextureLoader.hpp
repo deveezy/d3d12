@@ -26,11 +26,9 @@
 #include <d3d11_1.h>
 
 #ifdef _MSC_VER
-
 #pragma warning(push)
 #pragma warning(disable : 4005)
 #pragma warning(pop)
-
 #endif
 
 #if defined(_MSC_VER) && (_MSC_VER < 1610) && !defined(_In_reads_)
