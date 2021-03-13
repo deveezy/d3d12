@@ -20,6 +20,8 @@ add_executable(${proj} WIN32
     src/Common/MathHelper.hpp 
     src/Common/MathHelper.cpp 
     src/Common/UploadBuffer.hpp 
+    src/Common/DDSTextureLoader.cpp
+    src/Common/DDSTextureLoader.hpp
 
     src/Chapter8/Exercises/6/LitWaves/FrameResource.hpp
     src/Chapter8/Exercises/6/LitWaves/FrameResource.cpp
