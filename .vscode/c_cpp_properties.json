@@ -3,14 +3,14 @@
         {
             "name": "Win",
             "includePath": [
-                "${workspaceFolder}/"
+                "${workspaceFolder}/**"
             ],
             "defines": [
                 "_DEBUG",
                 "UNICODE",
                 "_UNICODE",
             ],
-            "intelliSenseMode": "windows-clang-x64",
+            "intelliSenseMode": "clang-x64",
             "configurationProvider": "ms-vscode.cmake-tools",
             "compilerPath": "C:\\Program Files\\LLVM\\bin\\clang++",
             "cppStandard": "c++17",
