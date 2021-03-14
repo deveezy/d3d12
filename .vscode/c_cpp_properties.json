@@ -6,7 +6,7 @@
                 "${workspaceFolder}/src/**",
                 "${workspaceFolder}/src"
             ],
-            "intelliSenseMode": "msvc-x64",
+            "intelliSenseMode": "clang-x64",
             "configurationProvider": "ms-vscode.cmake-tools"
         }
     ],

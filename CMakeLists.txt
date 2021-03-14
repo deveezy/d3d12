@@ -75,19 +75,12 @@ endforeach()
 
 include_directories(src/)
 
-if(MSVC)
+add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+add_definitions(-D_DEBUG)
+add_definitions(-DDEBUG)
 
-    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-    add_definitions(-D_DEBUG)
-    add_definitions(-DDEBUG)
-
-    if(NOT CMAKE_C_EXTENSIONS)
-        set(CMAKE_C_EXTENSIONS OFF)
-    endif()
-    target_compile_options(${proj} PRIVATE /W4)
-    # target_compile_options(${proj} PRIVATE /EHs-c- /GR-)
-
-
+if(NOT CMAKE_C_EXTENSIONS)
+    set(CMAKE_C_EXTENSIONS OFF)
 endif()
 
 target_compile_definitions(${proj} PRIVATE "UNICODE" "_UNICODE")
