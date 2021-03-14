@@ -761,8 +761,10 @@ void LitWavesApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std:
 	{
 		RenderItem* ri = ritems[i];
 
-		cmdList->IASetVertexBuffers(0, 1, &ri->Geo->VertexBufferView());
-		cmdList->IASetIndexBuffer(&ri->Geo->IndexBufferView());
+		D3D12_VERTEX_BUFFER_VIEW vertexBufferView = ri->Geo->VertexBufferView();
+		D3D12_INDEX_BUFFER_VIEW  indexBufferView = ri->Geo->IndexBufferView();
+		cmdList->IASetVertexBuffers(0, 1, &vertexBufferView);
+		cmdList->IASetIndexBuffer(&indexBufferView);
 		cmdList->IASetPrimitiveTopology(ri->PrimitiveType);
 
 		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + ri->ObjCBIndex * objCBByteSize;

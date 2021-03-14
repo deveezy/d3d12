@@ -223,7 +223,7 @@ void LitWavesApp::Update(const GameTimer& gt)
 	// If not, wait until the GPU has completed commands up to this fence point.
 	if(mCurrFrameResource->Fence != 0 && mFence->GetCompletedValue() < mCurrFrameResource->Fence)
 	{
-		HANDLE eventHandle = CreateEventEx(nullptr, false, false, EVENT_ALL_ACCESS);
+		HANDLE eventHandle = CreateEventEx(nullptr, nullptr, false, EVENT_ALL_ACCESS);
 		ThrowIfFailed(mFence->SetEventOnCompletion(mCurrFrameResource->Fence, eventHandle));
 		WaitForSingleObject(eventHandle, INFINITE);
 		CloseHandle(eventHandle);
@@ -251,19 +251,19 @@ void LitWavesApp::Draw(const GameTimer& gt)
 	mCommandList->RSSetScissorRects(1, &mScissorRect);
 
 	// Indicate a state transition on the resource usage.
-	mCommandList->ResourceBarrier(1, 
-		&CD3DX12_RESOURCE_BARRIER::Transition(
-			CurrentBackBuffer(),
-			D3D12_RESOURCE_STATE_PRESENT, 
-			D3D12_RESOURCE_STATE_RENDER_TARGET)
-	);
+	CD3DX12_RESOURCE_BARRIER transionBarrier = CD3DX12_RESOURCE_BARRIER::Transition(
+                CurrentBackBuffer(), D3D12_RESOURCE_STATE_PRESENT,
+                D3D12_RESOURCE_STATE_RENDER_TARGET);
+        mCommandList->ResourceBarrier(1, &transionBarrier);
 
 	// Clear the back buffer and depth buffer.
 	mCommandList->ClearRenderTargetView(CurrentBackBufferView(), Colors::LightSteelBlue, 0, nullptr);
 	mCommandList->ClearDepthStencilView(DepthStencilView(), D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, nullptr);
 
 	// Specify the buffers we are going to render to.
-	mCommandList->OMSetRenderTargets(1, &CurrentBackBufferView(), true, &DepthStencilView());
+	D3D12_CPU_DESCRIPTOR_HANDLE hCurrentBackBufferDesc = CurrentBackBufferView();
+	D3D12_CPU_DESCRIPTOR_HANDLE hDepthStencilDesc = DepthStencilView();
+	mCommandList->OMSetRenderTargets(1, &hCurrentBackBufferDesc, true, &hDepthStencilDesc);
 
 	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
 
@@ -273,8 +273,9 @@ void LitWavesApp::Draw(const GameTimer& gt)
 	DrawRenderItems(mCommandList.Get(), mRitemLayer[(int)RenderLayer::Opaque]);
 
 	// Indicate a state transition on the resource usage.
-	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
-		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+	transionBarrier = CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
+		D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+	mCommandList->ResourceBarrier(1, &transionBarrier);
 
 	// Done recording commands.
 	ThrowIfFailed(mCommandList->Close());
@@ -427,12 +428,17 @@ void LitWavesApp::UpdateMaterialCBs(const GameTimer& gt)
 void LitWavesApp::UpdateMainPassCB(const GameTimer& gt)
 {
 	XMMATRIX view = XMLoadFloat4x4(&mView);
+	XMVECTOR detView = XMMatrixDeterminant(view);
+
 	XMMATRIX proj = XMLoadFloat4x4(&mProj);
+	XMVECTOR detProj = XMMatrixDeterminant(proj);
 
 	XMMATRIX viewProj = XMMatrixMultiply(view, proj);
-	XMMATRIX invView = XMMatrixInverse(&XMMatrixDeterminant(view), view);
-	XMMATRIX invProj = XMMatrixInverse(&XMMatrixDeterminant(proj), proj);
-	XMMATRIX invViewProj = XMMatrixInverse(&XMMatrixDeterminant(viewProj), viewProj);
+	XMVECTOR detViewProj = XMMatrixDeterminant(viewProj);
+
+	XMMATRIX invView = XMMatrixInverse(&detView, view);
+	XMMATRIX invProj = XMMatrixInverse(&detProj, proj);
+	XMMATRIX invViewProj = XMMatrixInverse(&detViewProj, viewProj);
 
 	XMStoreFloat4x4(&mMainPassCB.View, XMMatrixTranspose(view));
 	XMStoreFloat4x4(&mMainPassCB.InvView, XMMatrixTranspose(invView));
@@ -761,8 +767,10 @@ void LitWavesApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std:
 	{
 		RenderItem* ri = ritems[i];
 
-		cmdList->IASetVertexBuffers(0, 1, &ri->Geo->VertexBufferView());
-		cmdList->IASetIndexBuffer(&ri->Geo->IndexBufferView());
+		D3D12_VERTEX_BUFFER_VIEW vertexBufferView = ri->Geo->VertexBufferView();
+		D3D12_INDEX_BUFFER_VIEW  indexBufferView = ri->Geo->IndexBufferView();
+		cmdList->IASetVertexBuffers(0, 1, &vertexBufferView);
+		cmdList->IASetIndexBuffer(&indexBufferView);
 		cmdList->IASetPrimitiveTopology(ri->PrimitiveType);
 
 		D3D12_GPU_VIRTUAL_ADDRESS objCBAddress = objectCB->GetGPUVirtualAddress() + ri->ObjCBIndex * objCBByteSize;

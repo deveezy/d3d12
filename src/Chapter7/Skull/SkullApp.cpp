@@ -571,9 +571,11 @@ void SkullApp::DrawRenderItems(ID3D12GraphicsCommandList* cmd_list, const std::v
     for (size_t i = 0; i < ritems.size(); ++i)
     {
         RenderItem* item = ritems[i];
-        cmd_list->IASetVertexBuffers(0, 1, &item->geometry->VertexBufferView());
-        cmd_list->IASetIndexBuffer(&item->geometry->IndexBufferView());
-        cmd_list->IASetPrimitiveTopology(item->primitive_type);
+        D3D12_VERTEX_BUFFER_VIEW vertexBufferView = ri->Geo->VertexBufferView();
+		D3D12_INDEX_BUFFER_VIEW  indexBufferView = ri->Geo->IndexBufferView();
+		cmdList->IASetVertexBuffers(0, 1, &vertexBufferView);
+		cmdList->IASetIndexBuffer(&indexBufferView);
+		cmdList->IASetPrimitiveTopology(ri->PrimitiveType);
 
         DX::XMMATRIX mat_world = DX::XMLoadFloat4x4(&item->mat_world);
         cmd_list->SetGraphicsRoot32BitConstants(

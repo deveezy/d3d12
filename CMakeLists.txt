@@ -5,6 +5,7 @@ project(${proj} CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+# set(CMAKE_CXX_FLAGS -Wno-address-of-temporary)
 
 add_executable(${proj} WIN32
     src/Common/d3dApp.cpp 
@@ -63,6 +64,7 @@ add_executable(${proj} WIN32
     src/io/StringUtil.cpp
 )
 
+add_library(project_warnings INTERFACE)
 get_cmake_property(_varNames VARIABLES)
 list (REMOVE_DUPLICATES _varNames)
 list (SORT _varNames)
@@ -72,11 +74,11 @@ foreach (_varName ${_varNames})
     endif()
 endforeach()
 
-
 include_directories(src/)
 
 add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 add_definitions(-D_DEBUG)
+add_definitions(-D_UNICODE)
 add_definitions(-DDEBUG)
 
 if(NOT CMAKE_C_EXTENSIONS)
