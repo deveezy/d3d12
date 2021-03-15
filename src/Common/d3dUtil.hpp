@@ -20,7 +20,7 @@
 #include <sstream>
 #include <cassert>
 #include <Common/d3dx12.h>
-// #include "DDSTextureLoader.h"
+#include <Common/DDSTextureLoader.hpp>
 #include "Common/MathHelper.hpp"
 #include <Common/defines.hpp>
 

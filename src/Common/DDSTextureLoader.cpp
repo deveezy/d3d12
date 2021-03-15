@@ -1237,23 +1237,11 @@ HRESULT DirectX::CreateDDSTextureFromFile12(_In_ ID3D12Device* device,
 	_In_ size_t maxsize,
 	_Out_opt_ DDS_ALPHA_MODE* alphaMode)
 {
-	if (texture)
-	{
-		texture = nullptr;
-	}
-	if (textureUploadHeap)
-	{
-		textureUploadHeap = nullptr;
-	}
-	if (alphaMode)
-	{
-		*alphaMode = DDS_ALPHA_MODE_UNKNOWN;
-	}
+	if (texture) { texture = nullptr; }
+	if (textureUploadHeap) { textureUploadHeap = nullptr; }
+	if (alphaMode) { *alphaMode = DDS_ALPHA_MODE_UNKNOWN; }
 
-	if (!device || !szFileName)
-	{
-		return E_INVALIDARG;
-	}
+	if (!device || !szFileName) { return E_INVALIDARG; }
 
 	DDS_HEADER* header = nullptr;
 	u8* bitData = nullptr;
@@ -1261,10 +1249,7 @@ HRESULT DirectX::CreateDDSTextureFromFile12(_In_ ID3D12Device* device,
 
 	std::unique_ptr<u8[]> ddsData;
 	HRESULT hr = LoadTextureDataFromFile(szFileName, ddsData, &header, &bitData, &bitSize);
-	if (FAILED(hr))
-	{
-		return hr;
-	}
+	if (FAILED(hr)) { return hr; }
 
 	hr = CreateTextureFromDDS12(device, cmdList, header,
 		bitData, bitSize, maxsize, false, texture, textureUploadHeap);

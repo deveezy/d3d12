@@ -24,11 +24,16 @@ add_executable(${proj} WIN32
     src/Common/DDSTextureLoader.cpp
     src/Common/DDSTextureLoader.hpp
 
-    src/Chapter8/Exercises/6/LitWaves/FrameResource.hpp
-    src/Chapter8/Exercises/6/LitWaves/FrameResource.cpp
-    src/Chapter8/Exercises/6/LitWaves/Waves.hpp
-    src/Chapter8/Exercises/6/LitWaves/Waves.cpp
-    src/Chapter8/Exercises/6/LitWaves/LitWavesApp.cpp
+    # src/Chapter8/Exercises/6/LitWaves/FrameResource.hpp
+    # src/Chapter8/Exercises/6/LitWaves/FrameResource.cpp
+    # src/Chapter8/Exercises/6/LitWaves/Waves.hpp
+    # src/Chapter8/Exercises/6/LitWaves/Waves.cpp
+    # src/Chapter8/Exercises/6/LitWaves/LitWavesApp.cpp
+
+    src/Chapter9/FrameResource.hpp
+    src/Chapter9/FrameResource.cpp
+    src/Chapter9/CrateApp.cpp
+    src/Chapter9/CrateApp.hpp
 
     # src/Chapter8/Exercises/3/FrameResource.hpp
     # src/Chapter8/Exercises/3/FrameResource.cpp
