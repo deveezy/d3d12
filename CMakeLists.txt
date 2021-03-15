@@ -5,7 +5,7 @@ project(${proj} CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-# set(CMAKE_CXX_FLAGS -Wno-address-of-temporary)
+set(CMAKE_CXX_FLAGS -Wno-address-of-temporary)
 
 add_executable(${proj} WIN32
     src/Common/d3dApp.cpp 
