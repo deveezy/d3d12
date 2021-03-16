@@ -105,7 +105,7 @@ VertexOut VS(VertexIn vin)
 float4 PS(VertexOut pin) : SV_Target
 {
     // gDiffuseMap.Sample(gsamLinear, pin.TexC) - Get diffuse albedo at this pixel from texture.
-    float4 diffuseAlbedo = gDiffuseMap.Sample(linearWrap, pin.TexC) * gDiffuseAlbedo;
+    float4 diffuseAlbedo = gDiffuseMap.Sample(anisotropicWrap, pin.TexC) * gDiffuseAlbedo;
 
     // Interpolating normal can unnormalize it, so renormalize it.
     pin.NormalW = normalize(pin.NormalW);

@@ -188,6 +188,7 @@ struct Material
 	DirectX::XMFLOAT4 DiffuseAlbedo = { 1.f, 1.f, 1.f, 1.f };
 	DirectX::XMFLOAT3 FresnelR0 = { .01f, .01f, .01f };
 	f32 Roughness = .25f;
+
 	DirectX::XMFLOAT4X4 MatTransform = MathHelper::Identity4x4();
 };
 

@@ -30,10 +30,15 @@ add_executable(${proj} WIN32
     # src/Chapter8/Exercises/6/LitWaves/Waves.cpp
     # src/Chapter8/Exercises/6/LitWaves/LitWavesApp.cpp
 
-    src/Chapter9/FrameResource.hpp
-    src/Chapter9/FrameResource.cpp
-    src/Chapter9/CrateApp.cpp
-    src/Chapter9/CrateApp.hpp
+    # src/Chapter9/FrameResource.hpp
+    # src/Chapter9/FrameResource.cpp
+    # src/Chapter9/CrateApp.cpp
+    # src/Chapter9/CrateApp.hpp
+    src/Chapter9/TexWaves/FrameResource.hpp
+    src/Chapter9/TexWaves/FrameResource.cpp
+    src/Chapter9/TexWaves/Waves.hpp
+    src/Chapter9/TexWaves/Waves.cpp
+    src/Chapter9/TexWaves/TexWavesApp.cpp
 
     # src/Chapter8/Exercises/3/FrameResource.hpp
     # src/Chapter8/Exercises/3/FrameResource.cpp
